@@ -1,16 +1,17 @@
 name: Docker Build & Push
 
 on:
-  push:
-    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main" ]
+    types: [ closed ]
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build:
+    if: github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'dev'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -19,6 +20,11 @@ jobs:
     steps:
       - name: Repository auschecken
         uses: actions/checkout@v4
+
+      - name: Repository-Namen in Kleinbuchstaben umwandeln
+        id: lower_repo
+        run: |
+          echo "IMAGE_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: QEMU für ARM-Emulation einrichten
         uses: docker/setup-qemu-action@v3
@@ -33,10 +39,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Image für amd64 & arm64 bauen und pushen
+      - name: Image bauen und pushen
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.REGISTRY }}/${{ steps.lower_repo.outputs.IMAGE_NAME }}:latest
