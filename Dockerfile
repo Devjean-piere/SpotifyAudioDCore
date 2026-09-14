@@ -13,9 +13,10 @@ RUN case "$TARGETARCH" in \
 RUN rustup target add "$(cat /tmp/target)"
 
 ENV OPENSSL_STATIC=1
+ENV PKG_CONFIG_ALLOW_CROSS=1
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
-RUN cargo build --release --target "$(cat /tmp/target)" \
+RUN cargo build --release --verbose --target "$(cat /tmp/target)" \
     && cp target/"$(cat /tmp/target)"/release/spotifyAudioD /app/spotifyAudioD
 
 FROM --platform=$TARGETPLATFORM alpine:3.20
