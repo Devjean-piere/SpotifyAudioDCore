@@ -11,12 +11,11 @@ use librespot::playback::player::Player;
 use oauth2::basic::BasicClient;
 use oauth2::{AuthUrl, AuthorizationCode, ClientId, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenUrl, TokenResponse};
 use tokio::sync::oneshot;
-use crate::{get_cach_path, CONNECT_NAME};
-use crate::snap_cast::SnapcastClient;
-use crate::structs::AppState;
+use crate::{get_cache_path, CONNECT_NAME};
+use crate::structs::{AppState};
 
 pub async fn spotify(server_port: u16, app_state: AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let cache_path = get_cach_path();
+    let cache_path = get_cache_path();
     let session_config = SessionConfig::default();
     let cache = Cache::new(Some(&cache_path), Some(&cache_path), Some(&cache_path), None)?;
 
@@ -70,6 +69,7 @@ pub async fn spotify(server_port: u16, app_state: AppState) -> Result<(), Box<dy
     let mixer_builder = mixer::find(None).ok_or("No Mixer found")?;
     let mixer = mixer_builder(MixerConfig::default())?;
 
+
     let player_config = PlayerConfig::default();
     let audio_format = AudioFormat::default();
     let player = Player::new(player_config, session.clone(), mixer.get_soft_volume(), move || {
@@ -81,18 +81,15 @@ pub async fn spotify(server_port: u16, app_state: AppState) -> Result<(), Box<dy
         ..Default::default()
     };
 
-    *app_state.mixer.write().await = Some(mixer.clone());
 
     let (spirc, spirc_task) = Spirc::new(connect_config, session, credentials, player, mixer).await?;
 
     let spirc = Arc::new(spirc);
-
     *app_state.spirc.write().await = Some(spirc.clone());
-
-    let snapcast_client = SnapcastClient::new("127.0.0.1:1780");
-    *app_state.snapcast.write().await = Some(Arc::from(snapcast_client));
+    
 
     println!("Spotify Connect Device Online! API bereit auf Port {server_port}.");
+    
 
     spirc_task.await;
 

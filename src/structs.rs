@@ -1,10 +1,9 @@
+use std::collections::HashMap;
+use crate::{LoginSender, snap_cast};
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use librespot::connect::Spirc;
-use librespot::playback::mixer::Mixer;
-use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
-use crate::{snap_cast, LoginSender};
-
 
 pub struct Arg {
     pub long: String,
@@ -17,26 +16,29 @@ pub struct LoginQuery {
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum AudioSource {
-    Spotify
+#[derive(Clone, Copy, Serialize, Deserialize)]
+pub struct BandEqGains {
+    pub high: f32,
+    pub low: f32,
+    pub mid: f32,
 }
 
 #[derive(Clone)]
 pub struct AppState {
     pub login_sender: LoginSender,
-    pub spirc: Arc<RwLock<Option<Arc<Spirc>>>>,
-    pub mixer: Arc<RwLock<Option<Arc<dyn Mixer>>>>,
     pub snapcast: Arc<RwLock<Option<Arc<snap_cast::SnapcastClient>>>>,
-    pub source: Arc<RwLock<AudioSource>>,
+    pub source: Arc<RwLock<String>>,
+    pub volume: Arc<RwLock<f32>>,
+    pub spirc: Arc<RwLock<Option<Arc<Spirc>>>>,
+    pub band_eq: Arc<RwLock<BandEqGains>>,
 }
 #[derive(Deserialize)]
 pub struct VolumeQuery {
-    pub value: u16,
+    pub value: f32,
 }
 #[derive(Serialize)]
 pub struct VolumeResponse {
-    pub value: u16,
+    pub value: f32,
 }
 
 #[derive(Deserialize)]
